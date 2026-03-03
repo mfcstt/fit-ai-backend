@@ -1,7 +1,9 @@
 import type { WeekDay } from "../../generated/prisma/enums";
 import { prisma } from "../../lib/auth";
 import type {
+  CountCompletedSessionsOnDateDTO,
   CreateWorkoutPlanDTO,
+  FindWorkoutSessionsInRangeDTO,
   FindWorkoutDayOwnerDTO,
   FindWorkoutSessionOwnerDTO,
   StartWorkoutSessionDTO,
@@ -40,6 +42,50 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
       },
       select: { id: true },
     });
+  }
+
+  async findActivePlanWithDaysByUserId(userId: string) {
+    const workoutPlan = await prisma.workoutPlan.findFirst({
+      where: {
+        userId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        workoutDays: {
+          select: {
+            id: true,
+            workoutPlanId: true,
+            isRest: true,
+            weekDay: true,
+            estimatedDurationInSeconds: true,
+            coverImageUrl: true,
+            _count: {
+              select: {
+                workoutExercises: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!workoutPlan) {
+      return null;
+    }
+
+    return {
+      id: workoutPlan.id,
+      workoutDays: workoutPlan.workoutDays.map((workoutDay) => ({
+        id: workoutDay.id,
+        workoutPlanId: workoutDay.workoutPlanId,
+        isRest: workoutDay.isRest,
+        weekDay: workoutDay.weekDay,
+        estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
+        coverImageUrl: workoutDay.coverImageUrl,
+        exercisesCount: workoutDay._count.workoutExercises,
+      })),
+    };
   }
 
   async findWorkoutDayOwner(data: FindWorkoutDayOwnerDTO) {
@@ -144,5 +190,49 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
       completedAt: workoutSession.CompletedAt as Date,
       startedAt: workoutSession.StartedAt,
     };
+  }
+
+  async findWorkoutSessionsInRange(data: FindWorkoutSessionsInRangeDTO) {
+    const workoutSessions = await prisma.workoutSession.findMany({
+      where: {
+        workoutDay: {
+          workoutPlan: {
+            userId: data.userId,
+          },
+        },
+        StartedAt: {
+          gte: data.startsAtGte,
+          lte: data.startsAtLte,
+        },
+      },
+      select: {
+        StartedAt: true,
+        CompletedAt: true,
+      },
+    });
+
+    return workoutSessions.map((workoutSession) => ({
+      startedAt: workoutSession.StartedAt,
+      completedAt: workoutSession.CompletedAt,
+    }));
+  }
+
+  async countCompletedSessionsOnDate(data: CountCompletedSessionsOnDateDTO) {
+    return prisma.workoutSession.count({
+      where: {
+        workoutDay: {
+          workoutPlan: {
+            userId: data.userId,
+          },
+        },
+        StartedAt: {
+          gte: data.startOfDay,
+          lte: data.endOfDay,
+        },
+        NOT: {
+          CompletedAt: null,
+        },
+      },
+    });
   }
 }

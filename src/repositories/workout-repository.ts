@@ -1,3 +1,5 @@
+import type { WeekDay } from "../generated/prisma/enums";
+
 export interface CreateWorkoutPlanDTO {
   name: string;
   userId: string;
@@ -36,9 +38,42 @@ export interface UpdateWorkoutSessionDTO {
   completedAt: Date;
 }
 
+export interface ActiveWorkoutPlanWithDays {
+  id: string;
+  workoutDays: {
+    id: string;
+    workoutPlanId: string;
+    isRest: boolean;
+    weekDay: WeekDay;
+    estimatedDurationInSeconds: number;
+    coverImageUrl: string | null;
+    exercisesCount: number;
+  }[];
+}
+
+export interface WorkoutSessionForConsistency {
+  startedAt: Date;
+  completedAt: Date | null;
+}
+
+export interface FindWorkoutSessionsInRangeDTO {
+  userId: string;
+  startsAtGte: Date;
+  startsAtLte: Date;
+}
+
+export interface CountCompletedSessionsOnDateDTO {
+  userId: string;
+  startOfDay: Date;
+  endOfDay: Date;
+}
+
 export interface WorkoutRepository {
   create(data: CreateWorkoutPlanDTO): Promise<{ id: string }>;
   findActiveByUserId(userId: string): Promise<{ id: string } | null>;
+  findActivePlanWithDaysByUserId(
+    userId: string,
+  ): Promise<ActiveWorkoutPlanWithDays | null>;
   findWorkoutDayOwner(
     data: FindWorkoutDayOwnerDTO,
   ): Promise<{ userId: string } | null>;
@@ -54,4 +89,10 @@ export interface WorkoutRepository {
     completedAt: Date;
     startedAt: Date;
   }>;
+  findWorkoutSessionsInRange(
+    data: FindWorkoutSessionsInRangeDTO,
+  ): Promise<WorkoutSessionForConsistency[]>;
+  countCompletedSessionsOnDate(
+    data: CountCompletedSessionsOnDateDTO,
+  ): Promise<number>;
 }

@@ -7,17 +7,17 @@ import {
 
 import { generateDocumentation } from "./docs/swagger";
 import { auth } from "./lib/auth";
+import { homeRoutes } from "./routes/home";
 import { workoutPlanRoutes } from "./routes/workout-plan";
-
 
 export const app = Fastify({ logger: true });
 
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 
-
 await generateDocumentation(app);
 
+app.register(homeRoutes, { prefix: "/home" });
 app.register(workoutPlanRoutes, { prefix: "/workout-plans" });
 
 // Authentication endpoint (BetterAuth)
@@ -28,7 +28,7 @@ app.route({
     try {
       // Construct request URL
       const url = new URL(request.url, `http://${request.headers.host}`);
-      
+
       // Convert Fastify headers to standard Headers object
       const headers = new Headers();
       Object.entries(request.headers).forEach(([key, value]) => {
@@ -47,12 +47,11 @@ app.route({
       response.headers.forEach((value, key) => reply.header(key, value));
       reply.send(response.body ? await response.text() : null);
     } catch (error) {
-      app.log.error
-      reply.status(500).send({ 
+      app.log.error;
+      reply.status(500).send({
         error: "Internal authentication error",
-        code: "AUTH_FAILURE"
+        code: "AUTH_FAILURE",
       });
     }
-  }
+  },
 });
-
