@@ -68,6 +68,53 @@ export interface CountCompletedSessionsOnDateDTO {
   endOfDay: Date;
 }
 
+export interface FindWorkoutPlanByIdDTO {
+  workoutPlanId: string;
+}
+
+export interface WorkoutPlanWithDays {
+  id: string;
+  name: string;
+  userId: string;
+  workoutDays: {
+    id: string;
+    weekDay: WeekDay;
+    isRest: boolean;
+    coverImageUrl: string | null;
+    estimatedDurationInSeconds: number;
+    exercisesCount: number;
+  }[];
+}
+
+export interface FindWorkoutDayByIdDTO {
+  workoutPlanId: string;
+  workoutDayId: string;
+}
+
+export interface WorkoutDayWithDetails {
+  id: string;
+  weekDay: WeekDay;
+  isRest: boolean;
+  coverImageUrl: string | null;
+  estimatedDurationInSeconds: number;
+  userId: string;
+  exercises: {
+    id: string;
+    workoutDayId: string;
+    order: number;
+    name: string;
+    sets: number;
+    reps: number;
+    restTimeInSeconds: number;
+  }[];
+  sessions: {
+    id: string;
+    workoutDayId: string;
+    startedAt: Date;
+    completedAt: Date | null;
+  }[];
+}
+
 export interface WorkoutRepository {
   create(data: CreateWorkoutPlanDTO): Promise<{ id: string }>;
   findActiveByUserId(userId: string): Promise<{ id: string } | null>;
@@ -95,4 +142,10 @@ export interface WorkoutRepository {
   countCompletedSessionsOnDate(
     data: CountCompletedSessionsOnDateDTO,
   ): Promise<number>;
+  findWorkoutPlanById(
+    data: FindWorkoutPlanByIdDTO,
+  ): Promise<WorkoutPlanWithDays | null>;
+  findWorkoutDayById(
+    data: FindWorkoutDayByIdDTO,
+  ): Promise<WorkoutDayWithDetails | null>;
 }

@@ -6,6 +6,10 @@ import { ConflictError, ForbiddenError, NotFoundError } from "../errors/error";
 import { auth } from "../lib/auth";
 import {
   ErrorSchema,
+  GetWorkoutDayByIdParamsSchema,
+  GetWorkoutDayByIdResponseSchema,
+  GetWorkoutPlanByIdParamsSchema,
+  GetWorkoutPlanByIdResponseSchema,
   StartWorkoutSessionParamsSchema,
   StartWorkoutSessionResponseSchema,
   UpdateWorkoutSessionBodySchema,
@@ -14,10 +18,133 @@ import {
   WorkoutPlanSchema,
 } from "../schema";
 import { makeCreateWorkoutPlan } from "../use-cases/factories/make-create-workout-plan";
+import { makeGetWorkoutDayById } from "../use-cases/factories/make-get-workout-day-by-id";
+import { makeGetWorkoutPlanById } from "../use-cases/factories/make-get-workout-plan-by-id";
 import { makeStartWorkoutSession } from "../use-cases/factories/make-start-workout-session";
 import { makeUpdateWorkoutSession } from "../use-cases/factories/make-update-workout-session";
 
 export async function workoutPlanRoutes(app: FastifyInstance) {
+  app.withTypeProvider<ZodTypeProvider>().route({
+    method: "GET",
+    url: "/:workoutPlanId/days/:workoutDayId",
+    schema: {
+      tags: ["Workout Days"],
+      summary: "Get workout day by id",
+      params: GetWorkoutDayByIdParamsSchema,
+      response: {
+        200: GetWorkoutDayByIdResponseSchema,
+        400: ErrorSchema,
+        401: ErrorSchema,
+        403: ErrorSchema,
+        404: ErrorSchema,
+        500: ErrorSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const getWorkoutDayById = makeGetWorkoutDayById();
+
+      const session = await auth.api.getSession({
+        headers: fromNodeHeaders(request.headers),
+      });
+
+      if (!session) {
+        return reply.status(401).send({
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      try {
+        const result = await getWorkoutDayById.execute({
+          userId: session.user.id,
+          workoutPlanId: request.params.workoutPlanId,
+          workoutDayId: request.params.workoutDayId,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        if (error instanceof ForbiddenError) {
+          return reply.status(403).send({
+            error: error.message,
+            code: "FORBIDDEN",
+          });
+        }
+
+        if (error instanceof NotFoundError) {
+          return reply.status(404).send({
+            error: error.message,
+            code: "NOT_FOUND",
+          });
+        }
+
+        return reply.status(500).send({
+          error: "Internal server error",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
+    },
+  });
+
+  app.withTypeProvider<ZodTypeProvider>().route({
+    method: "GET",
+    url: "/:id",
+    schema: {
+      tags: ["Workout Plans"],
+      summary: "Get workout plan by id",
+      params: GetWorkoutPlanByIdParamsSchema,
+      response: {
+        200: GetWorkoutPlanByIdResponseSchema,
+        400: ErrorSchema,
+        401: ErrorSchema,
+        403: ErrorSchema,
+        404: ErrorSchema,
+        500: ErrorSchema,
+      },
+    },
+    handler: async (request, reply) => {
+      const getWorkoutPlanById = makeGetWorkoutPlanById();
+
+      const session = await auth.api.getSession({
+        headers: fromNodeHeaders(request.headers),
+      });
+
+      if (!session) {
+        return reply.status(401).send({
+          error: "Unauthorized",
+          code: "UNAUTHORIZED",
+        });
+      }
+
+      try {
+        const result = await getWorkoutPlanById.execute({
+          userId: session.user.id,
+          workoutPlanId: request.params.id,
+        });
+
+        return reply.status(200).send(result);
+      } catch (error) {
+        if (error instanceof ForbiddenError) {
+          return reply.status(403).send({
+            error: error.message,
+            code: "FORBIDDEN",
+          });
+        }
+
+        if (error instanceof NotFoundError) {
+          return reply.status(404).send({
+            error: error.message,
+            code: "NOT_FOUND",
+          });
+        }
+
+        return reply.status(500).send({
+          error: "Internal server error",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
+    },
+  });
+
   app.withTypeProvider<ZodTypeProvider>().route({
     method: "POST",
     url: "/",

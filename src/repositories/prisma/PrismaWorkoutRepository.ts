@@ -3,6 +3,8 @@ import { prisma } from "../../lib/auth";
 import type {
   CountCompletedSessionsOnDateDTO,
   CreateWorkoutPlanDTO,
+  FindWorkoutDayByIdDTO,
+  FindWorkoutPlanByIdDTO,
   FindWorkoutSessionsInRangeDTO,
   FindWorkoutDayOwnerDTO,
   FindWorkoutSessionOwnerDTO,
@@ -234,5 +236,116 @@ export class PrismaWorkoutRepository implements WorkoutRepository {
         },
       },
     });
+  }
+
+  async findWorkoutPlanById(data: FindWorkoutPlanByIdDTO) {
+    const workoutPlan = await prisma.workoutPlan.findUnique({
+      where: {
+        id: data.workoutPlanId,
+      },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        workoutDays: {
+          select: {
+            id: true,
+            weekDay: true,
+            isRest: true,
+            coverImageUrl: true,
+            estimatedDurationInSeconds: true,
+            _count: {
+              select: {
+                workoutExercises: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!workoutPlan) {
+      return null;
+    }
+
+    return {
+      id: workoutPlan.id,
+      name: workoutPlan.name,
+      userId: workoutPlan.userId,
+      workoutDays: workoutPlan.workoutDays.map((workoutDay) => ({
+        id: workoutDay.id,
+        weekDay: workoutDay.weekDay,
+        isRest: workoutDay.isRest,
+        coverImageUrl: workoutDay.coverImageUrl,
+        estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
+        exercisesCount: workoutDay._count.workoutExercises,
+      })),
+    };
+  }
+
+  async findWorkoutDayById(data: FindWorkoutDayByIdDTO) {
+    const workoutDay = await prisma.workoutDay.findFirst({
+      where: {
+        id: data.workoutDayId,
+        workoutPlanId: data.workoutPlanId,
+      },
+      select: {
+        id: true,
+        weekDay: true,
+        isRest: true,
+        coverImageUrl: true,
+        estimatedDurationInSeconds: true,
+        workoutPlan: {
+          select: {
+            userId: true,
+          },
+        },
+        workoutExercises: {
+          select: {
+            id: true,
+            workoutDayId: true,
+            order: true,
+            name: true,
+            sets: true,
+            reps: true,
+            restTimeInSeconds: true,
+          },
+          orderBy: {
+            order: "asc",
+          },
+        },
+        sessions: {
+          select: {
+            id: true,
+            workoutDayId: true,
+            StartedAt: true,
+            CompletedAt: true,
+          },
+          orderBy: {
+            StartedAt: "desc",
+          },
+        },
+      },
+    });
+
+    if (!workoutDay) {
+      return null;
+    }
+
+    return {
+      id: workoutDay.id,
+      weekDay: workoutDay.weekDay,
+      isRest: workoutDay.isRest,
+      coverImageUrl: workoutDay.coverImageUrl,
+      estimatedDurationInSeconds: workoutDay.estimatedDurationInSeconds,
+      userId: workoutDay.workoutPlan.userId,
+      exercises: workoutDay.workoutExercises,
+      sessions: workoutDay.sessions.map((session) => ({
+        id: session.id,
+        workoutDayId: session.workoutDayId,
+        startedAt: session.StartedAt,
+        completedAt: session.CompletedAt,
+      })),
+    };
   }
 }
