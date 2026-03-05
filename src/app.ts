@@ -12,6 +12,7 @@ import { workoutPlanRoutes } from "./routes/workout-plan";
 import { statsRoutes } from "./routes/stats";
 import { meRoutes } from "./routes/me";
 import { aiRoutes } from "./routes/ai";
+import { fastifyCors } from "@fastify/cors";
 
 export const app = Fastify({ logger: true });
 
@@ -20,11 +21,18 @@ app.setSerializerCompiler(serializerCompiler);
 
 await generateDocumentation(app);
 
+
+await app.register(fastifyCors, {
+  origin: ["http://localhost:3000"],
+  credentials: true,
+});
+
 app.register(homeRoutes, { prefix: "/home" });
 app.register(workoutPlanRoutes, { prefix: "/workout-plans" });
 app.register(statsRoutes);
 app.register(meRoutes, { prefix: "/me" });
 app.register(aiRoutes);
+
 
 // Authentication endpoint (BetterAuth)
 app.route({

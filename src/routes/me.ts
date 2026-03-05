@@ -11,6 +11,7 @@ export async function meRoutes(app: FastifyInstance) {
     method: "GET",
     url: "/",
     schema: {
+      operationId: "getMe",
       tags: ["Users"],
       summary: "Get authenticated user train data",
       response: {
