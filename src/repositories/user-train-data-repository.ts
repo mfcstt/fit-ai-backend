@@ -14,11 +14,7 @@ export interface UserTrainData {
   bodyFatPercentage: number;
 }
 
-export interface UserTrainDataWithUserName extends UserTrainData {
-  userName: string;
-}
-
 export interface UserTrainDataRepository {
   upsert(data: UpsertUserTrainDataDTO): Promise<UserTrainData>;
-  findByUserId(userId: string): Promise<UserTrainDataWithUserName | null>;
+  findByUserId(userId: string): Promise<UserTrainData | null>;
 }

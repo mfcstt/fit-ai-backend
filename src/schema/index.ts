@@ -61,16 +61,18 @@ export const GetHomeParamsSchema = z.object({
 
 export const GetHomeResponseSchema = z.object({
   activeWorkoutPlanId: z.uuid(),
-  todayWorkoutDay: z.object({
-    workoutPlanId: z.uuid(),
-    id: z.uuid(),
-    name: z.string(),
-    isRest: z.boolean(),
-    weekDay: z.enum(WeekDay),
-    estimatedDurationInSeconds: z.number(),
-    coverImageUrl: z.url().optional(),
-    exercisesCount: z.number(),
-  }).optional(),
+  todayWorkoutDay: z
+    .object({
+      workoutPlanId: z.uuid(),
+      id: z.uuid(),
+      name: z.string(),
+      isRest: z.boolean(),
+      weekDay: z.enum(WeekDay),
+      estimatedDurationInSeconds: z.number(),
+      coverImageUrl: z.url().optional(),
+      exercisesCount: z.number(),
+    })
+    .optional(),
   workoutStreak: z.number().int().min(0),
   consistencyByDay: z.record(
     z.string(),
@@ -161,11 +163,10 @@ export const GetStatsResponseSchema = z.object({
 
 export const UserTrainDataSchema = z.object({
   userId: z.string(),
-  userName: z.string(),
   weightInGrams: z.number(),
   heightInCentimeters: z.number(),
   age: z.number(),
   bodyFatPercentage: z.number(),
 });
 
-export const GetMeResponseSchema = z.union([UserTrainDataSchema, z.null()]);
+export const GetMeResponseSchema = UserTrainDataSchema;

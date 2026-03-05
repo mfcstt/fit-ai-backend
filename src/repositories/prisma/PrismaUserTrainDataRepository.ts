@@ -12,10 +12,6 @@ interface UserTrainDataRow {
   bodyFatPercentage: number;
 }
 
-interface UserTrainDataWithUserNameRow extends UserTrainDataRow {
-  userName: string;
-}
-
 export class PrismaUserTrainDataRepository implements UserTrainDataRepository {
   async upsert(data: UpsertUserTrainDataDTO) {
     const rows = await prisma.$queryRaw<UserTrainDataRow[]>`
@@ -55,10 +51,9 @@ export class PrismaUserTrainDataRepository implements UserTrainDataRepository {
   }
 
   async findByUserId(userId: string) {
-    const rows = await prisma.$queryRaw<UserTrainDataWithUserNameRow[]>`
+    const rows = await prisma.$queryRaw<UserTrainDataRow[]>`
       SELECT
         utd."userId" as "userId",
-        u."name" as "userName",
         utd."weightInGrams" as "weightInGrams",
         utd."heightInCentimeters" as "heightInCentimeters",
         utd."age" as "age",
@@ -70,6 +65,7 @@ export class PrismaUserTrainDataRepository implements UserTrainDataRepository {
     `;
 
     if (!rows[0]) {
+      // retorna os dados se for null retorna o campo + null
       return null;
     }
 
