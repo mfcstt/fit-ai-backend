@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
 import {
@@ -80,7 +80,7 @@ export const aiRoutes = async (app: FastifyInstance) => {
     const { messages } = request.body as { messages: UIMessage[] };
 
     const result = streamText({
-      model: google("gemini-2.5-flash-lite"),
+      model: openai("gpt-4o-mini"),
       system: aiSystemPrompt,
       tools: {
         getUserTrainData: tool({
@@ -161,8 +161,24 @@ export const aiRoutes = async (app: FastifyInstance) => {
       messages: await convertToModelMessages(messages),
     });
     const response = result.toUIMessageStreamResponse();
-    reply.status(response.status);
-    response.headers.forEach((value, key) => reply.header(key, value));
-    reply.send(response.body);
+
+    reply.raw.writeHead(
+      response.status,
+      Object.fromEntries(response.headers.entries()),
+    );
+
+    const reader = response.body!.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        reply.raw.write(value);
+      }
+    } finally {
+      reply.raw.end();
+    }
+
+    return reply;
   });
 };
