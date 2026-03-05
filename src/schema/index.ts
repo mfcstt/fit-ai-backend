@@ -70,7 +70,7 @@ export const GetHomeResponseSchema = z.object({
     estimatedDurationInSeconds: z.number(),
     coverImageUrl: z.url().optional(),
     exercisesCount: z.number(),
-  }),
+  }).optional(),
   workoutStreak: z.number().int().min(0),
   consistencyByDay: z.record(
     z.string(),

@@ -14,13 +14,22 @@ import { meRoutes } from "./routes/me";
 import { aiRoutes } from "./routes/ai";
 import { fastifyCors } from "@fastify/cors";
 
-export const app = Fastify({ logger: true });
+export const app = Fastify({
+  logger: {
+    transport: {
+      target: "pino-pretty",
+      options: {
+        translateTime: "HH:MM:ss Z",
+        ignore: "pid,hostname",
+      },
+    },
+  },
+});
 
 app.setValidatorCompiler(validatorCompiler);
 app.setSerializerCompiler(serializerCompiler);
 
 await generateDocumentation(app);
-
 
 await app.register(fastifyCors, {
   origin: ["http://localhost:3000"],
@@ -33,9 +42,11 @@ app.register(statsRoutes);
 app.register(meRoutes, { prefix: "/me" });
 app.register(aiRoutes);
 
-
 // Authentication endpoint (BetterAuth)
 app.route({
+  schema: {
+    hide: true, // Hide from documentation
+  },
   method: ["GET", "POST"],
   url: "/api/auth/*",
   async handler(request, reply) {
