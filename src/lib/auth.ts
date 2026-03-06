@@ -24,8 +24,9 @@ export const auth = betterAuth({
   plugins: [openAPI()],
   advanced: {
     crossSubDomainCookies: {
-      enabled: true,
+      enabled: env.API_BASE_URL.includes("001226.xyz"),
       domain: '001226.xyz',
+      
     }
   }
 });
